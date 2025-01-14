@@ -37,7 +37,7 @@ Commands:
 
 查看用户所属节点情况
 `jobview nodes` 输出如下：
-![nodes](./docs/image.png)
+![nodes](./docs/image_change.png)
 
 投递一个任务并在后台监控其资源消耗
 `jobview track "qsub -V -l vf=2G -q SC1.q -cwd work.sh" &> run.log &`
