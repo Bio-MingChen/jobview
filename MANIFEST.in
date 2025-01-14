@@ -1,0 +1,3 @@
+include requirements.txt
+include jobview/version/version.json
+include jobview/src/SimHei.ttf
