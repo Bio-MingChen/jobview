@@ -180,15 +180,15 @@ def show_nodes(user):
 
     rows = []
     for host, info in final_map.items():
-        used_cpu = info["cpu_used"]
-        total_cpu= info["cpu_total"]
-        vf_   = info["vf"]
-        memF  = info["memf"]  # 物理剩余(来自 hl:mem_free)
-        memT  = info["memtot"]  # 物理总
+        used_cpu = info.get("cpu_used",'-')
+        total_cpu= info.get("cpu_total",'-')
+        vf_   = info.get("vf",'-')
+        memF  = info.get("memf",'-')  # 物理剩余(来自 hl:mem_free)
+        memT  = info.get("memtot",'-')  # 物理总
 
         mem_str = f"{vf_:.1f} ({memF:.1f})/{memT:.1f}"
 
-        jobList = info["jobs"]
+        jobList = info.get("jobs",0)
         jobCount= len(jobList)
         userJob = sum(1 for j in jobList if j["user"]==user)
 
