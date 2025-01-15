@@ -441,8 +441,8 @@ def track_rs(interval, cmd, plot_only):
 
     # 提交任务并获取输出
     # try:
-    # bash_cmd = f"source ~/.bash_profile && {' '.join(cmd)}"
-    bash_cmd = f"{' '.join(cmd)}"
+    bash_cmd = f"source ~/.bash_profile && {' '.join(cmd)}"
+    # bash_cmd = f"{' '.join(cmd)}"
     print(bash_cmd)
     result = subprocess.run(bash_cmd, capture_output=True,text=True, shell=True)
     cmd_output = result.stdout
