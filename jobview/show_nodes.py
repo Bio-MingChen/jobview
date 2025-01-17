@@ -22,7 +22,7 @@ def run_command(cmd):
     return result.stdout.splitlines()
 
 def parse_qselect_user(lines):
-    suffix_pat = re.compile(r"\.hpc$")
+    suffix_pat = re.compile(r"\.(hpc|local)$")
     user_nodes = defaultdict(list)
     for ln in lines:
         ln = ln.strip()
