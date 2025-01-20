@@ -3,7 +3,7 @@ from .record_resource import track_rs
 from .show_nodes import show_nodes
 from .show_status import show_status
 
-@click.group('SGEViewer')
+@click.group('jobview')
 def cli():
     '''\b
     用于SGE系统的节点资源查看，任务资源显示和消耗记录的工具
@@ -20,11 +20,11 @@ def track(**kwargs):
     跟踪任务资源消耗情况，并生成图片和总结报告
     示例：
         执行命令:
-        SGEViewer track "qsub -V -l vf=20G -q SC1.q -cwd  work.novoauto_run.sh" 
+        jobview track "qsub -V -l vf=20G -q SC1.q -cwd  work.run.sh" 
         后台执行:
-        SGEViewer track "qsub -V -l vf=20G -q SC1.q -cwd  work.novoauto_run.sh" &> run.log &
+        jobview track "qsub -V -l vf=20G -q SC1.q -cwd  work.run.sh" &> run.log &
         仅绘图:
-        SGEViewer track -p track_7355217.json
+        jobview track -p track_7355217.json
     '''
     track_rs(**kwargs)
 
@@ -48,9 +48,9 @@ def show_status_cmd(**kwargs):
     """\b
     更全面和方便的展示投递任务情况
     使用示例：
-        SGEViwer status  
-        SGEViwer status -u user_name
-        SGEViwer status -u user_name -d
+        jobview status  
+        jobview status -u user_name
+        jobview status -u user_name -d
 
     """
     show_status(**kwargs)
