@@ -488,7 +488,7 @@ def track_rs(interval, cmd, plot_only):
                     # 保存到 JSON 文件
                     with open(json_file, 'w') as f:
                         json.dump(data, f, indent=2)
-                    click.echo(f"收集到数据于 {usage['timestamp']}: CPU {usage.get('cpu_time_sec', 'N/A')} 秒, 内存 {usage.get('memory_gb', 'N/A')} GB")
+                    click.echo(f"收集到数据于 {usage['timestamp']}: CPU {usage.get('cpu_time_sec', 'N/A')} 秒, 内存 {usage.get('accumulate_memory_gbs', 'N/A')} GB")
             except subprocess.CalledProcessError as e:
                 click.echo(f"运行 qstat -j {job_id} 失败: {e.stderr.strip()}")
 
