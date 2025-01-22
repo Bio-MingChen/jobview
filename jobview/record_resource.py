@@ -24,6 +24,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # 构建 SimHei.ttf 字体文件的路径
 font_path = os.path.join(current_dir, 'src', 'SimHei.ttf')
+# font_path = '/TJPROJ6/SC/personal_dir/chenming/research/SGE_manager/scripts/src/SimHei.ttf'
 
 # 打印字体路径以确保路径正确
 print(f"Font path: {font_path}")
@@ -109,74 +110,74 @@ def parse_usage_line(job_id,qstat_j_output):
     
     return usage
 
-def plot_usage(json_file):
+def plot_usage(json_file,output_prefix):
      # 任务完成后，生成图表
-    try:
-        if not os.path.exists(json_file):
-            click.echo("未收集到数据，跳过绘图。")
-            return
+    # try:
+    if not os.path.exists(json_file):
+        click.echo("未收集到数据，跳过绘图。")
+        return
 
-        with open(json_file, 'r') as f:
-            data = json.load(f)
-        if len(data) == 0:
-            click.echo("未收集到数据点，跳过绘图。")
-            return
-        job_id = data[0].get("job_id")
-        # 将时间戳转换为 datetime 对象
-        times = [datetime.fromisoformat(d['timestamp']) for d in data]
-        cpu_times = [d.get('cpu_time_sec', 0) for d in data]
-        mem_usage = [d.get('vmem_gb', 0) for d in data]
-        io_usage = [d.get('io_gb', 0) for d in data]
-        cpu_times_hours = [t / 3600 for t in cpu_times]
-        # 绘制 CPU 时间图
-        plt.figure(figsize=(10,5))
-        plt.plot(times, cpu_times_hours, label='CPU 时间 (小时)', marker='o')
-        plt.xlabel('时间')
-        plt.ylabel('CPU 时间 (小时)')
-        plt.title(f'任务 {job_id} 的 CPU 时间使用情况')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        cpu_plot = f'cpu_usage_{job_id}.png'
-        plt.savefig(cpu_plot)
-        plt.close()
+    with open(json_file, 'r') as f:
+        data = json.load(f)
+    if len(data) == 0:
+        click.echo("未收集到数据点，跳过绘图。")
+        return
+    job_id = data[0].get("job_id")
+    # 将时间戳转换为 datetime 对象
+    times = [datetime.fromisoformat(d['timestamp']) for d in data]
+    cpu_times = [d.get('cpu_time_sec', 0) for d in data]
+    mem_usage = [d.get('vmem_gb', 0) for d in data]
+    io_usage = [d.get('io_gb', 0) for d in data]
+    cpu_times_hours = [t / 3600 for t in cpu_times]
+    # 绘制 CPU 时间图
+    plt.figure(figsize=(10,5))
+    plt.plot(times, cpu_times_hours, label='CPU 时间 (小时)', marker='o')
+    plt.xlabel('时间')
+    plt.ylabel('CPU 时间 (小时)')
+    plt.title(f'任务 {job_id} 的 CPU 时间使用情况')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    cpu_plot = f'cpu_usage_{job_id}.png'
+    plt.savefig(cpu_plot)
+    plt.close()
 
-        # 绘制内存使用图
-        plt.figure(figsize=(10,5))
-        plt.plot(times, mem_usage, label='内存使用 (GB)', color='orange', marker='o')
-        plt.xlabel('时间')
-        plt.ylabel('内存使用 (GB)')
-        plt.title(f'任务 {job_id} 的内存使用情况')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        mem_plot = f'memory_usage_{job_id}.png'
-        plt.savefig(mem_plot)
-        plt.close()
+    # 绘制内存使用图
+    plt.figure(figsize=(10,5))
+    plt.plot(times, mem_usage, label='内存使用 (GB)', color='orange', marker='o')
+    plt.xlabel('时间')
+    plt.ylabel('内存使用 (GB)')
+    plt.title(f'任务 {job_id} 的内存使用情况')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    mem_plot = f'memory_usage_{job_id}.png'
+    plt.savefig(mem_plot)
+    plt.close()
 
-        # 绘制内存使用图
-        plt.figure(figsize=(10,5))
-        plt.plot(times, io_usage, label='IO累计使用 (GB)', color='green', marker='o')
-        plt.xlabel('时间')
-        plt.ylabel('IO累计使用 (GB)')
-        plt.title(f'任务 {job_id} 的IO使用情况')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        io_plot = f'IO_usage_{job_id}.png'
-        plt.savefig(io_plot)
-        plt.close()
+    # 绘制内存使用图
+    plt.figure(figsize=(10,5))
+    plt.plot(times, io_usage, label='IO累计使用 (GB)', color='green', marker='o')
+    plt.xlabel('时间')
+    plt.ylabel('IO累计使用 (GB)')
+    plt.title(f'任务 {job_id} 的IO使用情况')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    io_plot = f'IO_usage_{job_id}.png'
+    plt.savefig(io_plot)
+    plt.close()
 
-        click.echo(f"图表已保存为 {cpu_plot}, {mem_plot} 和 {io_plot}")
-        # 生成 Plotly 报告
-        generate_plotly_report(data, job_id)
+    click.echo(f"图表已保存为 {cpu_plot}, {mem_plot} 和 {io_plot}")
+    # 生成 Plotly 报告
+    generate_plotly_report(data, job_id, output_prefix)
 
-    except Exception as e:
-        click.echo(f"生成图表失败: {e}")
+    # except Exception as e:
+    #     click.echo(f"生成图表失败: {e}")
 
 
 
-def generate_plotly_report(data, job_id):
+def generate_plotly_report(data, job_id, output_prefix):
     """
     使用 Plotly 生成交互式报告，包含：
       1. 一个汇总表格：展示任务时长、累计 CPU 时间、最大内存使用、平均 CPU 时间等信息
@@ -213,7 +214,7 @@ def generate_plotly_report(data, job_id):
     job_duration_str = time.strftime('%H:%M:%S', time.gmtime(job_duration_seconds))
 
     # 累计 CPU 时间、最大/平均内存
-    max_memory_usage_gb = data[-1].get('max_vmem_gb',0)
+    max_memory_usage_gb = data[-1].get('max_vmem_gb_str',0)
 
      # --- 1) 生成表格 ---
     table_data = go.Figure(
@@ -239,8 +240,8 @@ def generate_plotly_report(data, job_id):
                         [
                             f'{job_duration_str}',
                             f'{total_cpu_times_str}',
-                            f'{last_acc_mem_str:.2f}',
-                            f'{max_memory_usage_gb:.2f}',
+                            f'{last_acc_mem_str}',
+                            f'{max_memory_usage_gb}',
                             f'{avg_mem_usage_gb:.2f}'
                         ]
                     ],
@@ -440,7 +441,10 @@ def generate_plotly_report(data, job_id):
 """
 
     # 定义输出文件
-    report_file = f"resource_report_{job_id}.html"
+    if output_prefix:
+        report_file = f"{output_prefix}_resource_report_{job_id}.html"
+    else:
+        report_file = f"resource_report_{job_id}.html"
 
     with open(report_file, 'w', encoding='utf-8') as f:
         # 1. 写入 HTML 头部
@@ -449,7 +453,7 @@ def generate_plotly_report(data, job_id):
     click.echo(f"Plotly 报告已保存为 {report_file}")
 
 
-def track_rs(interval, cmd, plot_only):
+def track_rs(interval, cmd, plot_only,output_prefix=None):
     """
     跟踪 qsub 提交的任务的资源消耗。
 
@@ -462,7 +466,7 @@ def track_rs(interval, cmd, plot_only):
     """
     retry = 20
     if plot_only:
-        plot_usage(plot_only)
+        plot_usage(plot_only,output_prefix)
         return
 
     if len(cmd) == 0:
@@ -535,4 +539,4 @@ def track_rs(interval, cmd, plot_only):
     plot_usage(json_file)
 
 if __name__ == '__main__':
-    track_rs()
+    track_rs(10,'ls',plot_only="/TJPROJ6/SC/personal_dir/chenming/test/cellranger_test/test20250121/track_8465466.json")

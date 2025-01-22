@@ -15,6 +15,7 @@ def cli():
 @click.argument('cmd', nargs=-1, required=False)
 @click.option('--interval', '-i', default=10, help='检查任务状态的时间间隔（秒），默认为10秒。')
 @click.option('--plot-only','-p', help='制定一个json文件，只绘图')
+@click.option('--output_prefix','-o', help='制定一个json文件，只绘图')
 def track(**kwargs):
     '''\b
     跟踪任务资源消耗情况，并生成图片和总结报告
