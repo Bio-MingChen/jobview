@@ -12,7 +12,7 @@ import sys
 import matplotlib as mpl
 import plotly.graph_objects as go
 import plotly.io as pio
-
+import humanfriendly
 # 全局设置字体属性
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -58,6 +58,7 @@ def parse_usage_line(job_id,qstat_j_output):
                     key = key.strip().lower()
                     value = value.strip()
                     if key == 'cpu':
+                        usage['cpu_time_sec_str'] = value
                         if value.lower() == 'n/a':
                             usage['cpu_time_sec'] = 0
                         else:
@@ -67,51 +68,39 @@ def parse_usage_line(job_id,qstat_j_output):
                                 hours, minutes, seconds = map(int, cpu_match.groups())
                                 cpu_time_sec = hours * 3600 + minutes * 60 + seconds
                                 usage['cpu_time_sec'] = cpu_time_sec
+
                     elif key == 'mem':
                         # 时间和内存的乘积：mem=26565228.46810 GB s 表示你的作业在执行过程中内存使用和时间的积累值。
                         # 例如，如果你的作业运行了1000秒，并且在这段时间内平均使用了26.565 GB的内存，
                         # 那么 26565228.46810 GB s = 26.565 GB * 1000秒。
+                        usage['accumulate_memory_gbs_str'] = value
                         if value.lower() == 'n/a':
                             usage['accumulate_memory_gbs'] = 0 # 累计内存使用量
                         else:
-                            # 解析内存使用，例如 "15793.84118 GB s" 或 "3.293M"
-                            mem_match = re.match(r'([\d.]+)\s*GB', value, re.IGNORECASE)
-                            if mem_match:
-                                mem_gb = float(mem_match.group(1))
-                                usage['accumulate_memory_gbs'] = mem_gb
-                            else:
-                                # 处理其他单位，如 MB
-                                mem_match_mb = re.match(r'([\d.]+)\s*M', value, re.IGNORECASE)
-                                if mem_match_mb:
-                                    mem_mb = float(mem_match_mb.group(1))
-                                    usage['accumulate_memory_gbs'] = mem_mb / 1024  # 转换为 GB
+                            accumulate_memory_bite = humanfriendly.parse_size(value,binary=False)
+                            usage['accumulate_memory_gbs'] = accumulate_memory_bite /1000 ** 3
+
                     elif key == 'io': # io 是一个累计值，表示作业在整个执行期间的总 I/O 量。
+                        usage['io_gb_str'] = value
                         if value.lower() == 'n/a':
                             usage['io_gb'] = 0
                         else:
-                            # 解析 IO 使用，例如 "1.28253 GB"
-                            io_match = re.match(r'([\d.]+)\s*GB', value, re.IGNORECASE)
-                            if io_match:
-                                io_gb = float(io_match.group(1))
-                                usage['io_gb'] = io_gb
+                            io_bite = humanfriendly.parse_size(value,binary=False)
+                            usage['io_gb'] = io_bite / 1000 ** 3
                     elif key == 'vmem':
+                        usage['vmem_gb_str'] = value
                         if value.lower() == 'n/a':
                             usage['vmem_gb'] = 0
                         else:
-                            # 解析虚拟内存使用，例如 "154.242M"
-                            vmem_match = re.match(r'([\d.]+)\s*M', value, re.IGNORECASE)
-                            if vmem_match:
-                                vmem_mb = float(vmem_match.group(1))
-                                usage['vmem_gb'] = vmem_mb / 1024  # 转换为 GB
+                            vmem_bite = humanfriendly.parse_size(value,binary=False)
+                            usage['vmem_gb'] = vmem_bite / 1000 ** 3
                     elif key == 'maxvmem':
+                        usage['max_vmem_gb_str'] = value
                         if value.lower() == 'n/a':
                             usage['max_vmem_gb'] = 0
                         else:
-                            # 解析最大虚拟内存使用，例如 "265.637M"
-                            maxvmem_match = re.match(r'([\d.]+)\s*M', value, re.IGNORECASE)
-                            if maxvmem_match:
-                                maxvmem_mb = float(maxvmem_match.group(1))
-                                usage['max_vmem_gb'] = maxvmem_mb / 1024  # 转换为 GB
+                            max_vmem_bite = humanfriendly.parse_size(value,binary=False)
+                            usage['max_vmem_gb'] = max_vmem_bite / 1000 ** 3
             break
     if usage:
         # 添加当前时间
@@ -137,6 +126,7 @@ def plot_usage(json_file):
         times = [datetime.fromisoformat(d['timestamp']) for d in data]
         cpu_times = [d.get('cpu_time_sec', 0) for d in data]
         mem_usage = [d.get('vmem_gb', 0) for d in data]
+        io_usage = [d.get('io_gb', 0) for d in data]
         cpu_times_hours = [t / 3600 for t in cpu_times]
         # 绘制 CPU 时间图
         plt.figure(figsize=(10,5))
@@ -164,9 +154,23 @@ def plot_usage(json_file):
         plt.savefig(mem_plot)
         plt.close()
 
-        click.echo(f"图表已保存为 {cpu_plot} 和 {mem_plot}")
+        # 绘制内存使用图
+        plt.figure(figsize=(10,5))
+        plt.plot(times, io_usage, label='IO累计使用 (GB)', color='green', marker='o')
+        plt.xlabel('时间')
+        plt.ylabel('IO累计使用 (GB)')
+        plt.title(f'任务 {job_id} 的IO使用情况')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        io_plot = f'IO_usage_{job_id}.png'
+        plt.savefig(io_plot)
+        plt.close()
+
+        click.echo(f"图表已保存为 {cpu_plot}, {mem_plot} 和 {io_plot}")
         # 生成 Plotly 报告
         generate_plotly_report(data, job_id)
+
     except Exception as e:
         click.echo(f"生成图表失败: {e}")
 
@@ -186,17 +190,17 @@ def generate_plotly_report(data, job_id):
     times = [datetime.fromisoformat(d['timestamp']) for d in data]
     cpu_times = [d.get('cpu_time_sec', 0) for d in data]
     mem_usage = [d.get('vmem_gb', 0) for d in data]
+    io_usage = [d.get('io_gb', 0) for d in data]
+    total_cpu_times_str = data[-1].get("cpu_time_sec_str",0) 
+    last_acc_mem_str = data[-1].get('accumulate_memory_gbs_str', 0)
     last_acc_mem = data[-1].get('accumulate_memory_gbs', 0)
     last_cpu_sec = data[-1].get('cpu_time_sec', 0)
+    
      # 如果 cpu_time_sec 为0，则避免除以0的错误
     if last_cpu_sec > 0:
         avg_mem_usage_gb = last_acc_mem / last_cpu_sec
     else:
         avg_mem_usage_gb = 0
-
-    # 换算 CPU 时间为小时
-    total_cpu_times_hours = cpu_times[-1] / 3600 
-    total_cpu_times_str = time.strftime('%H:%M:%S', time.gmtime(cpu_times[-1]))
 
     cpu_times_hours = [t / 3600 for t in cpu_times]
     # 计算任务时长（第一个点到最后一个点）
@@ -235,7 +239,7 @@ def generate_plotly_report(data, job_id):
                         [
                             f'{job_duration_str}',
                             f'{total_cpu_times_str}',
-                            f'{last_acc_mem:.2f}',
+                            f'{last_acc_mem_str:.2f}',
                             f'{max_memory_usage_gb:.2f}',
                             f'{avg_mem_usage_gb:.2f}'
                         ]
@@ -290,6 +294,25 @@ def generate_plotly_report(data, job_id):
         height=400
     )
 
+    # === 4) IO使用趋势图 ===
+    fig_io = go.Figure()
+    fig_io.add_trace(
+        go.Scatter(
+            x=times,
+            y=io_usage,
+            mode='lines+markers',
+            name='IO使用 (GB)',
+            line=dict(color='green')
+        )
+    )
+    fig_io.update_layout(
+        title=f'任务 {job_id} 的IO累计变化',
+        xaxis_title='时间',
+        yaxis_title='IO累计变化图 (GB)',
+        margin=dict(l=40, r=20, t=40, b=20),
+        height=400
+    )
+
     table_html = pio.to_html(
                 table_data, 
                 full_html=False, 
@@ -301,6 +324,11 @@ def generate_plotly_report(data, job_id):
             )
     mem_html =  pio.to_html(
                 fig_mem, 
+                full_html=False, 
+                include_plotlyjs=False
+            )
+    io_html =  pio.to_html(
+                fig_io, 
                 full_html=False, 
                 include_plotlyjs=False
             )
@@ -404,6 +432,7 @@ def generate_plotly_report(data, job_id):
         <div class="col-md-12">{table_html}</div>
         <div class="col-md-12">{cpu_html}</div>
         <div class="col-md-12">{mem_html}</div>
+        <div class="col-md-12">{io_html}</div>
     </div>
 </div>
 </body>
@@ -431,6 +460,7 @@ def track_rs(interval, cmd, plot_only):
         track_rs -p track.json # 只绘图
 
     """
+    retry = 20
     if plot_only:
         plot_usage(plot_only)
         return
@@ -477,7 +507,11 @@ def track_rs(interval, cmd, plot_only):
                     break
             except subprocess.CalledProcessError as e:
                 click.echo(f"运行 qstat 失败: {e.stderr.strip()}")
-                break
+                retry -= 1
+                time.sleep(interval)
+                if retry < 0:
+                    click.secho(f"在qstat运行失败{retry}次后退出...",fg="red")
+                    break
 
             # 获取任务资源使用情况
             try:
@@ -491,7 +525,9 @@ def track_rs(interval, cmd, plot_only):
                     click.echo(f"收集到数据于 {usage['timestamp']}: CPU {usage.get('cpu_time_sec', 'N/A')} 秒, 内存 {usage.get('accumulate_memory_gbs', 'N/A')} GB")
             except subprocess.CalledProcessError as e:
                 click.echo(f"运行 qstat -j {job_id} 失败: {e.stderr.strip()}")
-
+                if "Following jobs do not exist" in e.stderr:
+                    break
+                
             time.sleep(interval)
     except KeyboardInterrupt:
         click.echo("跟踪被用户中断。")
