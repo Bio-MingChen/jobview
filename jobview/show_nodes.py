@@ -51,6 +51,16 @@ def parse_humanfriendly_size(s):
     except:
         return 0.0
 
+def safe_float(value):
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+def format_value(value):
+    return f"{value:.1f}" if isinstance(value, float) else str(value)
+
+
 def parse_qhost_q_j_F(lines):
     results = {}
     current_host = None
@@ -185,8 +195,12 @@ def show_nodes(user):
         vf_   = info.get("vf",'-')
         memF  = info.get("memf",'-')  # 物理剩余(来自 hl:mem_free)
         memT  = info.get("memtot",'-')  # 物理总
+        vf_safe = safe_float(vf_)
 
-        mem_str = f"{vf_:.1f} ({memF:.1f})/{memT:.1f}"
+        memF_safe = safe_float(memF)
+        memT_safe = safe_float(memT)
+        mem_str = f"{format_value(vf_safe)} ({format_value(memF_safe)})/{format_value(memT_safe)}"
+        # mem_str = f"{vf_:.1f} ({memF:.1f})/{memT:.1f}"
 
         jobList = info.get("jobs",0)
         jobCount= len(jobList)

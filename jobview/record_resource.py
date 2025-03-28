@@ -536,7 +536,7 @@ def track_rs(interval, cmd, plot_only,output_prefix=None):
     except KeyboardInterrupt:
         click.echo("跟踪被用户中断。")
 
-    plot_usage(json_file)
+    plot_usage(json_file,output_prefix)
 
 if __name__ == '__main__':
     track_rs(10,'ls',plot_only="/TJPROJ6/SC/personal_dir/chenming/test/cellranger_test/test20250121/track_8465466.json")
